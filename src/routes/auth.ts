@@ -1,7 +1,8 @@
 import { Router } from "express";
 import jwt from "jsonwebtoken";
 import { authenticateToken, AuthenticatedRequest } from "../middleware/authMiddleware";
-
+import bcrypt from "bcrypt";
+import prisma from "../prisma/client";
 
 const router = Router();
 
@@ -30,6 +31,37 @@ router.post("/login", (req, res) => {
 
   return res.status(401).json({ message: "Invalid credentials" });
 });
+
+router.post("/register", async (req, res) => {
+  try {
+    const { email, password, name } = req.body;
+
+    if (!email || !password) {
+      return res.status(400).json({ error: "email and password required" });
+    }
+
+    const passwordHash = await bcrypt.hash(password, 12);
+    const user = await prisma.user.create({
+      data: {
+        email,
+        name,
+        passwordHash,
+      },
+      select: {
+        id: true,
+        email: true,
+        name: true,
+        createdAt: true,
+      },
+    });
+
+    res.status(201).json(user);
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: "internal error" });
+  }
+});
+
 
 router.get("/me", authenticateToken, (req: AuthenticatedRequest, res) => {
     return res.json({ user: req.user });
