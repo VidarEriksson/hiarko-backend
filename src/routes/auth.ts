@@ -12,24 +12,24 @@ if (!JWT_SECRET) {
     throw new Error("JWT_SECRET is not defined in environment variables");
 };
 
-const users = {
-    username: "testuser",
-    password: "password123",
-}
 
-router.post("/login", (req, res) => {
-  if(!req.body|| !req.body.username || !req.body.password) {
-    return res.status(400).json({ message: "Username and password are required" });
+router.post("/login", async (req, res) => {
+  if(!req.body|| !req.body.email || !req.body.password) {
+    return res.status(400).json({ message: "Email and password are required" });
   }
-  const { username, password } = req.body;
+  const { email, password } = req.body;
 
+  const user = await prisma.user.findUnique({
+    where: { email },
+  });
 
-  if (users.username === username && users.password === password) {
-    const token = jwt.sign({ username }, JWT_SECRET, { expiresIn: JWT_EXPIRES_IN });
-    return res.json({ token });
+  if (!user || !await bcrypt.compare(password, user.passwordHash)) {
+    return res.status(401).json({ message: "Invalid credentials" });
   }
 
-  return res.status(401).json({ message: "Invalid credentials" });
+  const token = jwt.sign({ email }, JWT_SECRET, { expiresIn: JWT_EXPIRES_IN });
+  return res.json({ token });
+
 });
 
 router.post("/register", async (req, res) => {
@@ -63,7 +63,7 @@ router.post("/register", async (req, res) => {
 });
 
 
-router.get("/me", authenticateToken, (req: AuthenticatedRequest, res) => {
+router.get("/me", authenticateToken, async(req: AuthenticatedRequest, res) => {
     return res.json({ user: req.user });
 });
 
