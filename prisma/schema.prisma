@@ -4,7 +4,7 @@ generator client {
 
 datasource db {
   provider = "postgresql"
-  //url      = env("DATABASE_URL")
+  url      = env("DATABASE_URL")
 }
 model User {
   id        Int      @id @default(autoincrement())
@@ -13,4 +13,39 @@ model User {
   name      String?
   createdAt DateTime @default(now())
   isDeleted Boolean  @default(false)
+  ownedBoards  Board[]       @relation("BoardOwner")
+  memberships  BoardMember[]
+}
+
+model Board {
+  id        Int           @id @default(autoincrement())
+  name      String
+  createdAt DateTime      @default(now())
+
+  ownerId   Int
+  owner     User          @relation("BoardOwner", fields: [ownerId], references: [id], onDelete: Cascade)
+
+  members   BoardMember[]
+
+  @@index([ownerId])
+}
+
+model BoardMember {
+  boardId  Int
+  userId   Int
+  role     BoardRole      @default(OWNER)
+  joinedAt DateTime       @default(now())
+
+  board    Board          @relation(fields: [boardId], references: [id], onDelete: Cascade)
+  user     User           @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@id([boardId, userId])
+  @@index([userId])
+}
+
+enum BoardRole {
+  OWNER
+  ADMIN
+  MEMBER
+  VIEWER
 } 
