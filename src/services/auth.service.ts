@@ -16,11 +16,21 @@ export async function login(email: string, password: string) {
     throw err;
   }
 
-  const token = jwt.sign({ email, id: user.id }, JWT_SECRET, { expiresIn: JWT_EXPIRES_IN });
+  const token = jwt.sign({ email, id: user.id }, JWT_SECRET, {
+    expiresIn: JWT_EXPIRES_IN,
+  });
   return token;
 }
 
-export async function register({ email, password, name }: { email: string; password: string; name?: string }) {
+export async function register({
+  email,
+  password,
+  name,
+}: {
+  email: string;
+  password: string;
+  name?: string;
+}) {
   const passwordHash = await bcrypt.hash(password, 12);
   const user = await prisma.user.create({
     data: { email, name: name ?? null, passwordHash },
