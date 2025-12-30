@@ -1,9 +1,10 @@
 import { Router } from "express";
-import { Request, Response } from "express";
+import { Response } from "express";
 import jwt from "jsonwebtoken";
 import { authenticateToken } from "../middleware/authMiddleware";
 import bcrypt from "bcrypt";
 import prisma from "../prisma/client";
+import { AuthenticatedRequest } from "../types/authenticated";
 
 const router = Router();
 
@@ -64,8 +65,9 @@ router.post("/register", async (req, res) => {
 });
 
 
-router.get("/me", authenticateToken, async(req, res) => {
-    return res.json({ user: req.user });
+router.get("/me", authenticateToken, async (req, res) => {
+  const authReq = req as AuthenticatedRequest;
+  return res.json({ user: authReq.user });
 });
 
 export default router;

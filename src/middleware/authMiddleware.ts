@@ -1,6 +1,7 @@
 
 import jwt from "jsonwebtoken";
 import { Request, Response, NextFunction } from "express";
+import { AuthenticatedRequest } from "../types/authenticated";
 
 const JWT_SECRET = process.env.JWT_SECRET;
 if (!JWT_SECRET) {
@@ -20,7 +21,8 @@ export const authenticateToken = (req: Request, res: Response, next: NextFunctio
     if (err) {
       return res.status(403).json({ message: "Invalid or expired token" });
     }
-    req.user = user;
+    const payload = user as { id: number; email: string; name?: string };
+    (req as AuthenticatedRequest).user = payload;
     next();
   });
 };

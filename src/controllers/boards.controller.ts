@@ -1,8 +1,9 @@
 import { Request, Response } from "express";
 import * as boardsService from "../services/boards.service";
+import { AuthenticatedRequest } from "../types/authenticated";
 
 function requireUserId(req: Request): number {
-  const userId = req.user?.id;
+  const userId = (req as AuthenticatedRequest).user?.id;
   if (!userId) throw Object.assign(new Error("Unauthorized"), { status: 401 });
   return userId;
 }
