@@ -10,7 +10,8 @@ function requireUserId(req: Request): number {
 
 function parseBoardId(req: Request): number {
   const id = Number(req.params.id);
-  if (!Number.isFinite(id)) throw Object.assign(new Error("Board ID is required"), { status: 400 });
+  if (!Number.isFinite(id))
+    throw Object.assign(new Error("Board ID is required"), { status: 400 });
   return id;
 }
 

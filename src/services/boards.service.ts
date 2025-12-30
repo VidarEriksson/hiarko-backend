@@ -1,4 +1,4 @@
-import  prisma  from "../prisma/client";
+import prisma from "../prisma/client";
 
 export async function listForUser(userId: number) {
   return prisma.board.findMany({

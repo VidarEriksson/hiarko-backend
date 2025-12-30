@@ -12,7 +12,9 @@ export async function login(req: Request, res: Response) {
     return res.json({ token });
   } catch (err: any) {
     console.error(err);
-    return res.status(err.status || 500).json({ message: err.message || "internal error" });
+    return res
+      .status(err.status || 500)
+      .json({ message: err.message || "internal error" });
   }
 }
 
@@ -29,7 +31,9 @@ export async function register(req: Request, res: Response) {
     res.status(201).json(user);
   } catch (err: any) {
     console.error(err);
-    return res.status(err.status || 500).json({ error: err.message || "internal error" });
+    return res
+      .status(err.status || 500)
+      .json({ error: err.message || "internal error" });
   }
 }
 
