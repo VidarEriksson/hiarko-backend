@@ -1,10 +1,11 @@
 import { Router } from "express";
 import { authenticateToken } from "../middleware/authMiddleware";
 import prisma from "../prisma/client";
+import * as boardsController from "../controllers/boards.controller";
 
 const router = Router();
 
-router.get("/", authenticateToken, async (req, res) => {
+/* router.get("/", authenticateToken, async (req, res) => {
   const userId = (req as any).user?.id;
   const boards = await prisma.board.findMany({
     where: {
@@ -77,6 +78,12 @@ router.delete("/:id", authenticateToken, async (req, res) => {
     where: { id: Number(id) },
   });
   res.json({ message: `Delete ${id}` });
-});
+}); */
+
+
+router.get("/", authenticateToken, boardsController.listBoards);
+router.post("/", authenticateToken, boardsController.createBoard);
+router.get("/:id", authenticateToken, boardsController.getBoard);
+router.delete("/:id", authenticateToken, boardsController.deleteBoard);
 
 export default router;
