@@ -10,6 +10,7 @@ jest.mock("../../src/middleware/authMiddleware", () => ({
 jest.mock("../../src/services/boards.service", () => ({
   listForUser: jest.fn(),
   createForUser: jest.fn(),
+  getForUser: jest.fn(),
 }));
 
 import { makeTestApp } from "../helpers/app";
@@ -80,7 +81,7 @@ describe("Boards routes", () => {
       expect(res.body).toEqual({ message: "Board name is required" });
     });
 
-    it("returns 500 if service throws (optional)", async () => {
+    it("returns 500 if service throws", async () => {
       (boardsService.createForUser as jest.Mock).mockRejectedValue(
         new Error("DB error")
       );
@@ -90,6 +91,25 @@ describe("Boards routes", () => {
         .send({ name: "New Board" });
 
       expect(res.status).toBe(500);
+    });
+    describe("GET specific /boards/:id", () => {
+      it("returns 200 and { board }", async () => {
+        const board = { id: 1, name: "Board A" };
+        (boardsService.getForUser as jest.Mock).mockResolvedValue(board);
+
+        const res = await request(app).get("/boards/1");
+
+        expect(res.status).toBe(200);
+        expect(res.body).toEqual({ board });
+      });
+
+      it("returns 404 if board not found", async () => {
+        (boardsService.getForUser as jest.Mock).mockResolvedValue(null);
+
+        const res = await request(app).get("/boards/1");
+
+        expect(res.status).toBe(404);
+      });
     });
   });
 });
