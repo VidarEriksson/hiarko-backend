@@ -11,6 +11,7 @@ jest.mock("../../src/services/boards.service", () => ({
   listForUser: jest.fn(),
   createForUser: jest.fn(),
   getForUser: jest.fn(),
+  deleteForUser: jest.fn(),
 }));
 
 import { makeTestApp } from "../helpers/app";
@@ -110,6 +111,24 @@ describe("Boards routes", () => {
 
         expect(res.status).toBe(404);
       });
+    });
+  });
+  describe("DELETE /boards/:id", () => {
+    it("deletes the board and returns 200", async () => {
+      (boardsService.deleteForUser as jest.Mock).mockResolvedValue(undefined);
+
+      const res = await request(app).delete("/boards/1");
+
+      expect(res.status).toBe(200);
+      expect(res.body).toEqual({ message: "Deleted" });
+    });
+    it("returns 403 if board not found", async () => {
+      (boardsService.deleteForUser as jest.Mock).mockRejectedValue(
+        Object.assign(new Error("Forbidden"), { status: 403 })
+      );
+      const res = await request(app).delete("/boards/1");
+
+      expect(res.status).toBe(403);
     });
   });
 });
