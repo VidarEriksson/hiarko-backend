@@ -93,24 +93,24 @@ describe("Boards routes", () => {
 
       expect(res.status).toBe(500);
     });
-    describe("GET specific /boards/:id", () => {
-      it("returns 200 and { board }", async () => {
-        const board = { id: 1, name: "Board A" };
-        (boardsService.getForUser as jest.Mock).mockResolvedValue(board);
+  });
+  describe("GET /boards/:id", () => {
+    it("returns 200 and { board }", async () => {
+      const board = { id: 1, name: "Board A" };
+      (boardsService.getForUser as jest.Mock).mockResolvedValue(board);
 
-        const res = await request(app).get("/boards/1");
+      const res = await request(app).get("/boards/1");
 
-        expect(res.status).toBe(200);
-        expect(res.body).toEqual({ board });
-      });
+      expect(res.status).toBe(200);
+      expect(res.body).toEqual({ board });
+    });
 
-      it("returns 404 if board not found", async () => {
-        (boardsService.getForUser as jest.Mock).mockResolvedValue(null);
+    it("returns 404 if board not found", async () => {
+      (boardsService.getForUser as jest.Mock).mockResolvedValue(null);
 
-        const res = await request(app).get("/boards/1");
+      const res = await request(app).get("/boards/1");
 
-        expect(res.status).toBe(404);
-      });
+      expect(res.status).toBe(404);
     });
   });
   describe("DELETE /boards/:id", () => {
