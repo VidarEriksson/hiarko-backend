@@ -112,6 +112,11 @@ describe("Boards routes", () => {
 
       expect(res.status).toBe(404);
     });
+    it("returns 400 if id is invalid", async () => {
+      const res = await request(app).get("/boards/abc");
+
+      expect(res.status).toBe(400);
+    });
   });
   describe("DELETE /boards/:id", () => {
     it("deletes the board and returns 200", async () => {
