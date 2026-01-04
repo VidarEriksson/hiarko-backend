@@ -1,5 +1,4 @@
 name: test
-
 on: [push, pull_request]
 
 jobs:
@@ -12,4 +11,5 @@ jobs:
                   node-version: 20
                   cache: npm
             - run: npm ci
+            - run: npx prisma generate
             - run: npm test
