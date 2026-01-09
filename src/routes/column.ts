@@ -8,7 +8,6 @@ const router = Router();
 router.patch("/:columnId", authenticateToken, columnsController.updateColumn);
 router.delete("/:columnId", authenticateToken, columnsController.deleteColumn);
 
-// tasks under a column
 router.post("/:columnId/tasks", authenticateToken, tasksController.createTask);
 
 export default router;

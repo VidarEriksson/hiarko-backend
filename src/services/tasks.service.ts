@@ -131,7 +131,6 @@ export async function moveForUser(
     throw err;
   }
 
-  // get counts to validate upper bound
   const targetCount = await prisma.task.count({
     where: { columnId: toColumnId },
   });
@@ -146,7 +145,6 @@ export async function moveForUser(
       return prisma.task.findUnique({ where: { id: taskId } });
 
     if (toPosition < fromPos) {
-      // shift tasks in column up (position >= toPosition && position < fromPos) +1
       await prisma.$transaction([
         prisma.task.updateMany({
           where: {
@@ -161,7 +159,6 @@ export async function moveForUser(
         }),
       ]);
     } else {
-      // toPosition > fromPos: shift tasks down (position > fromPos && position <= toPosition) -1
       await prisma.$transaction([
         prisma.task.updateMany({
           where: {
@@ -177,19 +174,15 @@ export async function moveForUser(
       ]);
     }
   } else {
-    // moving across columns
     await prisma.$transaction([
-      // decrement positions in old column for tasks after the removed one
       prisma.task.updateMany({
         where: { columnId: fromColumnId, position: { gt: fromPos } },
         data: { position: { decrement: 1 } },
       }),
-      // increment positions in target column for tasks at or after toPosition
       prisma.task.updateMany({
         where: { columnId: toColumnId, position: { gte: toPosition } },
         data: { position: { increment: 1 } },
       }),
-      // update the task
       prisma.task.update({
         where: { id: taskId },
         data: { columnId: toColumnId, position: toPosition },
