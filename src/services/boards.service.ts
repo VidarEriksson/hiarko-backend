@@ -17,12 +17,44 @@ export async function createForUser(userId: number, name: string) {
 }
 
 export async function getForUser(userId: number, boardId: number) {
-  return prisma.board.findFirst({
+  const board = await prisma.board.findFirst({
     where: {
       id: boardId,
-      members: { some: { userId } },
+      OR: [{ ownerId: userId }, { members: { some: { userId } } }],
+    },
+    include: {
+      columns: {
+        orderBy: { position: "asc" },
+        include: {
+          tasks: {
+            orderBy: { position: "asc" },
+            include: {
+              assignee: { select: { id: true, name: true, email: true } },
+            },
+          },
+        },
+      },
+
+      members: {
+        include: {
+          user: { select: { id: true, name: true, email: true } },
+        },
+      },
     },
   });
+
+  if (!board) return null;
+
+  const myMembership = await prisma.boardMember.findUnique({
+    where: {
+      boardId_userId: { boardId, userId },
+    },
+    select: { role: true },
+  });
+
+  const role = board.ownerId === userId ? "OWNER" : myMembership?.role ?? null;
+
+  return { board, role };
 }
 
 export async function deleteForUser(userId: number, boardId: number) {

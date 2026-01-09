@@ -6,26 +6,34 @@ datasource db {
   provider = "postgresql"
   url      = env("DATABASE_URL")
 }
+
 model User {
-  id        Int      @id @default(autoincrement())
-  email     String   @unique
+  id           Int      @id @default(autoincrement())
+  email        String   @unique
   passwordHash String
-  name      String?
-  createdAt DateTime @default(now())
-  isDeleted Boolean  @default(false)
+  name         String?
+  createdAt    DateTime @default(now())
+  isDeleted    Boolean  @default(false)
+
   ownedBoards  Board[]       @relation("BoardOwner")
   memberships  BoardMember[]
+
+  assignedTasks Task[] @relation("TaskAssignee")
+  createdTasks  Task[] @relation("TaskCreator")
 }
 
 model Board {
-  id        Int           @id @default(autoincrement())
+  id        Int      @id @default(autoincrement())
   name      String
-  createdAt DateTime      @default(now())
+  createdAt DateTime @default(now())
 
   ownerId   Int
-  owner     User          @relation("BoardOwner", fields: [ownerId], references: [id], onDelete: Cascade)
+  owner     User     @relation("BoardOwner", fields: [ownerId], references: [id], onDelete: Cascade)
 
   members   BoardMember[]
+
+  columns   BoardColumn[]
+  tasks     Task[]
 
   @@index([ownerId])
 }
@@ -33,14 +41,61 @@ model Board {
 model BoardMember {
   boardId  Int
   userId   Int
-  role     BoardRole      @default(OWNER)
-  joinedAt DateTime       @default(now())
+  role     BoardRole @default(MEMBER)
+  joinedAt DateTime  @default(now())
 
-  board    Board          @relation(fields: [boardId], references: [id], onDelete: Cascade)
-  user     User           @relation(fields: [userId], references: [id], onDelete: Cascade)
+  board    Board     @relation(fields: [boardId], references: [id], onDelete: Cascade)
+  user     User      @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@id([boardId, userId])
   @@index([userId])
+}
+
+model BoardColumn {
+  id        Int      @id @default(autoincrement())
+  boardId   Int
+  name      String
+  position  Int    
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  board     Board    @relation(fields: [boardId], references: [id], onDelete: Cascade)
+  tasks     Task[]
+
+  @@unique([boardId, name])
+  @@index([boardId, position])
+}
+
+model Task {
+  id          Int      @id @default(autoincrement())
+
+  boardId     Int
+  columnId    Int
+
+  title       String
+  description String?
+
+  position    Int    
+  priority    Int      @default(0)
+
+  assigneeId  Int?
+  dueDate     DateTime?
+
+  createdById Int
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  board       Board       @relation(fields: [boardId], references: [id], onDelete: Cascade)
+  column      BoardColumn @relation(fields: [columnId], references: [id], onDelete: Restrict)
+
+  assignee    User?       @relation("TaskAssignee", fields: [assigneeId], references: [id], onDelete: SetNull)
+  createdBy   User        @relation("TaskCreator", fields: [createdById], references: [id], onDelete: Restrict)
+
+  @@index([boardId])
+  @@index([columnId, position])
+  @@index([assigneeId])
+  @@index([dueDate])
 }
 
 enum BoardRole {
@@ -48,4 +103,4 @@ enum BoardRole {
   ADMIN
   MEMBER
   VIEWER
-} 
+}
