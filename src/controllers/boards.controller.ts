@@ -37,10 +37,10 @@ export async function getBoard(req: Request, res: Response) {
   const userId = requireUserId(req);
   const boardId = parseBoardId(req);
 
-  const board = await boardsService.getForUser(userId, boardId);
-  if (!board) return res.status(404).json({ message: "Board not found" });
+  const results = await boardsService.getForUser(userId, boardId);
+  if (!results) return res.status(404).json({ message: "Board not found" });
 
-  res.json({ board });
+  res.json(results);
 }
 
 export async function deleteBoard(req: Request, res: Response) {

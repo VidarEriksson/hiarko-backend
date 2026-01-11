@@ -100,9 +100,8 @@ describe("Boards routes", () => {
       (boardsService.getForUser as jest.Mock).mockResolvedValue(board);
 
       const res = await request(app).get("/boards/1");
-
       expect(res.status).toBe(200);
-      expect(res.body).toEqual({ board });
+      expect(res.body).toEqual(board);
     });
 
     it("returns 404 if board not found", async () => {
