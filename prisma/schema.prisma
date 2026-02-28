@@ -20,6 +20,8 @@ model User {
 
   assignedTasks Task[] @relation("TaskAssignee")
   createdTasks  Task[] @relation("TaskCreator")
+
+  activityLogs ActivityLog[]
 }
 
 model Board {
@@ -103,4 +105,16 @@ enum BoardRole {
   ADMIN
   MEMBER
   VIEWER
+}
+
+model ActivityLog {
+  id        Int       @id @default(autoincrement())
+  userId    Int?
+  action    String
+  entity    String?
+  entityId  Int?
+  details   String?
+  createdAt DateTime  @default(now())
+
+  user      User?     @relation(fields: [userId], references: [id], onDelete: SetNull)
 }

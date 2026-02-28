@@ -1,4 +1,5 @@
 import prisma from "../prisma/client";
+import * as activityLog from "./activityLog.service";
 
 export async function createForUser(
   userId: number,
@@ -47,7 +48,17 @@ export async function createForUser(
   };
   if (description !== undefined) data.description = description;
 
-  return prisma.task.create({ data });
+  const task = await prisma.task.create({ data });
+
+  await activityLog.create({
+    userId,
+    action: "CREATE_TASK",
+    entity: "Task",
+    entityId: task.id,
+    details: title,
+  });
+
+  return task;
 }
 
 export async function updateForUser(
@@ -83,7 +94,17 @@ export async function updateForUser(
 
   await prisma.task.update({ where: { id: taskId }, data });
 
-  return prisma.task.findUnique({ where: { id: taskId } });
+  const updated = await prisma.task.findUnique({ where: { id: taskId } });
+
+  await activityLog.create({
+    userId,
+    action: "UPDATE_TASK",
+    entity: "Task",
+    entityId: taskId,
+    details: JSON.stringify(data),
+  });
+
+  return updated;
 }
 
 export async function moveForUser(
@@ -190,7 +211,17 @@ export async function moveForUser(
     ]);
   }
 
-  return prisma.task.findUnique({ where: { id: taskId } });
+  const result = await prisma.task.findUnique({ where: { id: taskId } });
+
+  await activityLog.create({
+    userId,
+    action: "MOVE_TASK",
+    entity: "Task",
+    entityId: taskId,
+    details: `from:${fromColumnId},to:${toColumnId},pos:${toPosition}`,
+  });
+
+  return result;
 }
 
 export async function deleteForUser(userId: number, taskId: number) {
@@ -221,4 +252,11 @@ export async function deleteForUser(userId: number, taskId: number) {
       data: { position: { decrement: 1 } },
     }),
   ]);
+
+  await activityLog.create({
+    userId,
+    action: "DELETE_TASK",
+    entity: "Task",
+    entityId: taskId,
+  });
 }
