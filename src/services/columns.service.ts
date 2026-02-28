@@ -1,4 +1,5 @@
 import prisma from "../prisma/client";
+import * as activityLog from "./activityLog.service";
 
 export async function createForUser(
   userId: number,
@@ -27,9 +28,19 @@ export async function createForUser(
 
   const position = last ? last.position + 1 : 0;
 
-  return prisma.boardColumn.create({
+  const column = await prisma.boardColumn.create({
     data: { boardId, name, position },
   });
+
+  await activityLog.create({
+    userId,
+    action: "CREATE_COLUMN",
+    entity: "BoardColumn",
+    entityId: column.id,
+    details: name,
+  });
+
+  return column;
 }
 
 export async function updateForUser(
@@ -59,7 +70,17 @@ export async function updateForUser(
 
   await prisma.boardColumn.update({ where: { id: columnId }, data });
 
-  return prisma.boardColumn.findUnique({ where: { id: columnId } });
+  const updated = await prisma.boardColumn.findUnique({ where: { id: columnId } });
+
+  await activityLog.create({
+    userId,
+    action: "UPDATE_COLUMN",
+    entity: "BoardColumn",
+    entityId: columnId,
+    details: data.name,
+  });
+
+  return updated;
 }
 
 export async function reorderForUser(
@@ -102,7 +123,17 @@ export async function reorderForUser(
     prisma.boardColumn.update({ where: { id }, data: { position: index } })
   );
 
-  return prisma.$transaction(updates);
+  const result = await prisma.$transaction(updates);
+
+  await activityLog.create({
+    userId,
+    action: "REORDER_COLUMNS",
+    entity: "Board",
+    entityId: boardId,
+    details: JSON.stringify(columnIds),
+  });
+
+  return result;
 }
 
 export async function deleteForUser(userId: number, columnId: number) {
@@ -127,4 +158,11 @@ export async function deleteForUser(userId: number, columnId: number) {
   }
 
   await prisma.boardColumn.delete({ where: { id: columnId } });
+
+  await activityLog.create({
+    userId,
+    action: "DELETE_COLUMN",
+    entity: "BoardColumn",
+    entityId: columnId,
+  });
 }

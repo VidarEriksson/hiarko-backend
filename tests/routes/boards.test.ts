@@ -47,7 +47,7 @@ describe("Boards routes", () => {
 
     it("returns 500 if service throws (optional)", async () => {
       (boardsService.listForUser as jest.Mock).mockRejectedValue(
-        new Error("DB error")
+        new Error("DB error"),
       );
 
       const res = await request(app).get("/boards");
@@ -71,7 +71,7 @@ describe("Boards routes", () => {
       expect(boardsService.createForUser).toHaveBeenCalledTimes(1);
       expect(boardsService.createForUser).toHaveBeenCalledWith(
         123,
-        "New Board"
+        "New Board",
       );
     });
 
@@ -84,7 +84,7 @@ describe("Boards routes", () => {
 
     it("returns 500 if service throws", async () => {
       (boardsService.createForUser as jest.Mock).mockRejectedValue(
-        new Error("DB error")
+        new Error("DB error"),
       );
 
       const res = await request(app)
@@ -128,7 +128,7 @@ describe("Boards routes", () => {
     });
     it("returns 403 if board not found", async () => {
       (boardsService.deleteForUser as jest.Mock).mockRejectedValue(
-        Object.assign(new Error("Forbidden"), { status: 403 })
+        Object.assign(new Error("Forbidden"), { status: 403 }),
       );
       const res = await request(app).delete("/boards/1");
 

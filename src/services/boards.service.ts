@@ -1,4 +1,5 @@
 import prisma from "../prisma/client";
+import * as activityLog from "./activityLog.service";
 
 export async function listForUser(userId: number) {
   return prisma.board.findMany({
@@ -7,13 +8,24 @@ export async function listForUser(userId: number) {
 }
 
 export async function createForUser(userId: number, name: string) {
-  return prisma.board.create({
+  const board = await prisma.board.create({
     data: {
       name,
       ownerId: userId,
       members: { create: { userId, role: "OWNER" } },
     },
   });
+
+  // record activity
+  await activityLog.create({
+    userId,
+    action: "CREATE_BOARD",
+    entity: "Board",
+    entityId: board.id,
+    details: name,
+  });
+
+  return board;
 }
 
 export async function getForUser(userId: number, boardId: number) {
@@ -70,4 +82,12 @@ export async function deleteForUser(userId: number, boardId: number) {
   }
 
   await prisma.board.delete({ where: { id: boardId } });
+
+  // log deletion
+  await activityLog.create({
+    userId,
+    action: "DELETE_BOARD",
+    entity: "Board",
+    entityId: boardId,
+  });
 }
