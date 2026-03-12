@@ -8,8 +8,8 @@ export async function login(req: Request, res: Response) {
   }
   const { email, password } = req.body;
   try {
-    const token = await authService.login(email, password);
-    return res.json({ token });
+    const { accessToken, refreshToken } = await authService.login(email, password);
+    return res.json({ accessToken, refreshToken });
   } catch (err: any) {
     console.error(err);
     return res
@@ -40,4 +40,36 @@ export async function register(req: Request, res: Response) {
 export async function me(req: Request, res: Response) {
   const authReq = req as AuthenticatedRequest;
   return res.json({ user: authReq.user });
+}
+
+export async function refresh(req: Request, res: Response) {
+  const { refreshToken } = req.body;
+  if (!refreshToken) {
+    return res.status(400).json({ message: "refreshToken is required" });
+  }
+  try {
+    const tokens = await authService.refresh(refreshToken);
+    return res.json(tokens);
+  } catch (err: any) {
+    console.error(err);
+    return res
+      .status(err.status || 500)
+      .json({ message: err.message || "internal error" });
+  }
+}
+
+export async function logout(req: Request, res: Response) {
+  const { refreshToken } = req.body;
+  if (!refreshToken) {
+    return res.status(400).json({ message: "refreshToken is required" });
+  }
+  try {
+    await authService.logout(refreshToken);
+    return res.status(204).send();
+  } catch (err: any) {
+    console.error(err);
+    return res
+      .status(err.status || 500)
+      .json({ message: err.message || "internal error" });
+  }
 }

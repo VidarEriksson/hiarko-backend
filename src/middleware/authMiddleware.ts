@@ -21,7 +21,8 @@ export const authenticateToken = (
 
   jwt.verify(token, JWT_SECRET, (err: any, user: any) => {
     if (err) {
-      return res.status(403).json({ message: "Invalid or expired token" });
+      const status = err.name === "TokenExpiredError" ? 401 : 403;
+      return res.status(status).json({ message: "Invalid or expired token" });
     }
     const payload = user as { id: number; email: string; name?: string };
     (req as AuthenticatedRequest).user = payload;
