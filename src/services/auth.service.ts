@@ -4,8 +4,8 @@ import jwt from "jsonwebtoken";
 import crypto from "crypto";
 
 const JWT_SECRET = process.env.JWT_SECRET!;
-const JWT_EXPIRES_IN = "1h";
-const REFRESH_TOKEN_EXPIRES_DAYS = 7;
+const JWT_EXPIRES_IN = "8h";
+const REFRESH_TOKEN_EXPIRES_DAYS = 90;
 
 if (!JWT_SECRET) {
   throw new Error("JWT_SECRET is not defined in environment variables");
