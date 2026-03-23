@@ -3,6 +3,7 @@ import authRoutes from "./routes/auth";
 import boardRoutes from "./routes/board";
 import columnRoutes from "./routes/column";
 import taskRoutes from "./routes/task";
+import orgRoutes from "./routes/org";
 import cors from "cors";
 
 export function createApp() {
@@ -21,6 +22,7 @@ export function createApp() {
   app.use("/boards", boardRoutes);
   app.use("/columns", columnRoutes);
   app.use("/tasks", taskRoutes);
+  app.use("/orgs", orgRoutes);
 
   return app;
 }
