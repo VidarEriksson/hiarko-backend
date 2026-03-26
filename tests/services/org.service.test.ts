@@ -10,12 +10,16 @@ jest.mock("../../src/prisma/client", () => ({
   },
   orgMember: {
     findUnique: jest.fn(),
+    findMany: jest.fn(),
     create: jest.fn(),
     update: jest.fn(),
     delete: jest.fn(),
   },
   board: {
     create: jest.fn(),
+  },
+  boardMember: {
+    createMany: jest.fn(),
   },
 }));
 
@@ -239,26 +243,56 @@ describe("org.service", () => {
   });
 
   describe("createBoard", () => {
-    it("creates board for OWNER", async () => {
+    it("creates board for OWNER and adds other org members as board members", async () => {
       (prisma.orgMember.findUnique as jest.Mock).mockResolvedValue({ role: "OWNER" });
       const fakeBoard = { id: 5, name: "Sprint 1", orgId: 1 };
       (prisma.board.create as jest.Mock).mockResolvedValue(fakeBoard);
+      (prisma.orgMember.findMany as jest.Mock).mockResolvedValue([
+        { userId: 20 },
+        { userId: 30 },
+      ]);
+      (prisma.boardMember.createMany as jest.Mock).mockResolvedValue({ count: 2 });
 
       const result = await orgService.createBoard(10, 1, "Sprint 1");
 
       expect(prisma.board.create).toHaveBeenCalledWith({
         data: expect.objectContaining({ name: "Sprint 1", orgId: 1, ownerId: 10 }),
       });
+      expect(prisma.orgMember.findMany).toHaveBeenCalledWith({
+        where: { orgId: 1, userId: { not: 10 } },
+        select: { userId: true },
+      });
+      expect(prisma.boardMember.createMany).toHaveBeenCalledWith({
+        data: [
+          { boardId: 5, userId: 20, role: "MEMBER" },
+          { boardId: 5, userId: 30, role: "MEMBER" },
+        ],
+        skipDuplicates: true,
+      });
       expect(result).toEqual(fakeBoard);
     });
 
-    it("creates board for ADMIN", async () => {
+    it("creates board for ADMIN and adds other org members as board members", async () => {
       (prisma.orgMember.findUnique as jest.Mock).mockResolvedValue({ role: "ADMIN" });
-      (prisma.board.create as jest.Mock).mockResolvedValue({});
+      const fakeBoard = { id: 5, name: "Sprint 1", orgId: 1 };
+      (prisma.board.create as jest.Mock).mockResolvedValue(fakeBoard);
+      (prisma.orgMember.findMany as jest.Mock).mockResolvedValue([{ userId: 20 }]);
+      (prisma.boardMember.createMany as jest.Mock).mockResolvedValue({ count: 1 });
 
       await orgService.createBoard(10, 1, "Sprint 1");
 
       expect(prisma.board.create).toHaveBeenCalled();
+      expect(prisma.boardMember.createMany).toHaveBeenCalled();
+    });
+
+    it("skips boardMember.createMany when no other org members exist", async () => {
+      (prisma.orgMember.findUnique as jest.Mock).mockResolvedValue({ role: "OWNER" });
+      (prisma.board.create as jest.Mock).mockResolvedValue({ id: 5, name: "Sprint 1", orgId: 1 });
+      (prisma.orgMember.findMany as jest.Mock).mockResolvedValue([]);
+
+      await orgService.createBoard(10, 1, "Sprint 1");
+
+      expect(prisma.boardMember.createMany).not.toHaveBeenCalled();
     });
 
     it("throws 403 for MEMBER", async () => {
