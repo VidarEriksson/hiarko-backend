@@ -1,9 +1,10 @@
-import express from "express";
+import express, { Request, Response, NextFunction } from "express";
 import authRoutes from "./routes/auth";
 import boardRoutes from "./routes/board";
 import columnRoutes from "./routes/column";
 import taskRoutes from "./routes/task";
 import orgRoutes from "./routes/org";
+import inviteRoutes from "./routes/invites";
 import cors from "cors";
 
 export function createApp() {
@@ -23,6 +24,13 @@ export function createApp() {
   app.use("/columns", columnRoutes);
   app.use("/tasks", taskRoutes);
   app.use("/orgs", orgRoutes);
+  app.use("/invites", inviteRoutes);
+
+  app.use((err: any, _req: Request, res: Response, _next: NextFunction) => {
+    const status = err.status ?? err.statusCode ?? 500;
+    const message = err.message ?? "Internal server error";
+    res.status(status).json({ message });
+  });
 
   return app;
 }

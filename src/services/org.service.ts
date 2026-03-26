@@ -1,4 +1,5 @@
 import prisma from "../prisma/client";
+import crypto from "crypto";
 
 function notFound() {
   return Object.assign(new Error("Organization not found"), { status: 404 });
@@ -122,6 +123,102 @@ export async function updateMemberRole(
   return prisma.orgMember.update({
     where: { orgId_userId: { orgId, userId: targetUserId } },
     data: { role },
+  });
+}
+
+export async function createInvite(
+  requesterId: number,
+  orgId: number,
+  email: string
+) {
+  const requester = await prisma.orgMember.findUnique({
+    where: { orgId_userId: { orgId, userId: requesterId } },
+    select: { role: true },
+  });
+
+  if (!requester || requester.role === "MEMBER") throw forbidden();
+
+  const org = await prisma.organization.findUnique({
+    where: { id: orgId },
+    select: { name: true },
+  });
+
+  if (!org) throw notFound();
+
+  // Reuse existing pending invite for same email+org if not expired
+  const existing = await prisma.orgInvite.findFirst({
+    where: { orgId, email, status: "PENDING", expiresAt: { gt: new Date() } },
+  });
+  if (existing) return existing;
+
+  const token = crypto.randomUUID();
+  const expiresAt = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000); // 7 days
+
+  return prisma.orgInvite.create({
+    data: { token, email, orgId, invitedById: requesterId, expiresAt },
+  });
+}
+
+export async function getInvite(token: string) {
+  const invite = await prisma.orgInvite.findUnique({
+    where: { token },
+    include: {
+      org: { select: { id: true, name: true } },
+      invitedBy: { select: { name: true, email: true } },
+    },
+  });
+
+  if (!invite) throw Object.assign(new Error("Invite not found"), { status: 404 });
+  if (invite.status !== "PENDING") throw Object.assign(new Error("Invite already used"), { status: 410 });
+  if (invite.expiresAt < new Date()) throw Object.assign(new Error("Invite expired"), { status: 410 });
+
+  return invite;
+}
+
+export async function acceptInvite(userId: number, token: string) {
+  const invite = await getInvite(token);
+
+  const user = await prisma.user.findUnique({
+    where: { id: userId },
+    select: { email: true },
+  });
+
+  if (!user) throw Object.assign(new Error("User not found"), { status: 404 });
+  if (user.email !== invite.email) throw Object.assign(new Error("This invite was sent to a different email address"), { status: 403 });
+
+  // Already a member — just mark accepted
+  const existing = await prisma.orgMember.findUnique({
+    where: { orgId_userId: { orgId: invite.orgId, userId } },
+  });
+
+  if (!existing) {
+    await prisma.orgMember.create({
+      data: { orgId: invite.orgId, userId, role: "MEMBER" },
+    });
+  }
+
+  await prisma.orgInvite.update({
+    where: { token },
+    data: { status: "ACCEPTED" },
+  });
+
+  return invite.org;
+}
+
+export async function declineInvite(userId: number, token: string) {
+  const invite = await getInvite(token);
+
+  const user = await prisma.user.findUnique({
+    where: { id: userId },
+    select: { email: true },
+  });
+
+  if (!user) throw Object.assign(new Error("User not found"), { status: 404 });
+  if (user.email !== invite.email) throw Object.assign(new Error("This invite was sent to a different email address"), { status: 403 });
+
+  await prisma.orgInvite.update({
+    where: { token },
+    data: { status: "DECLINED" },
   });
 }
 
