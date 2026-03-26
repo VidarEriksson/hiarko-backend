@@ -13,6 +13,7 @@ router.post("/:id/members", authenticateToken, orgController.addMember);
 router.delete("/:id/members/:userId", authenticateToken, orgController.removeMember);
 router.patch("/:id/members/:userId", authenticateToken, orgController.updateMemberRole);
 
+router.post("/:id/invites", authenticateToken, orgController.createInvite);
 router.post("/:id/boards", authenticateToken, orgController.createOrgBoard);
 
 export default router;

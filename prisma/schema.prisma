@@ -26,6 +26,7 @@ model User {
 
   ownedOrgs      Organization[] @relation("OrgOwner")
   orgMemberships OrgMember[]
+  invitesSent    OrgInvite[]    @relation("InviteSender")
 }
 
 model Board {
@@ -131,6 +132,7 @@ model Organization {
 
   members   OrgMember[]
   boards    Board[]
+  invites   OrgInvite[]
 
   @@index([ownerId])
 }
@@ -158,6 +160,29 @@ model RefreshToken {
   user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@index([userId])
+}
+
+enum InviteStatus {
+  PENDING
+  ACCEPTED
+  DECLINED
+}
+
+model OrgInvite {
+  id          Int          @id @default(autoincrement())
+  token       String       @unique
+  email       String
+  orgId       Int
+  invitedById Int
+  status      InviteStatus @default(PENDING)
+  expiresAt   DateTime
+  createdAt   DateTime     @default(now())
+
+  org         Organization @relation(fields: [orgId], references: [id], onDelete: Cascade)
+  invitedBy   User         @relation("InviteSender", fields: [invitedById], references: [id], onDelete: Cascade)
+
+  @@index([orgId])
+  @@index([email])
 }
 
 model ActivityLog {

@@ -94,6 +94,21 @@ export async function updateMemberRole(req: Request, res: Response) {
   res.json({ member });
 }
 
+export async function createInvite(req: Request, res: Response) {
+  const userId = requireUserId(req);
+  const orgId = parseOrgId(req);
+  const email = req.body?.email;
+
+  if (!email || typeof email !== "string")
+    return res.status(400).json({ message: "email is required" });
+
+  const invite = await orgService.createInvite(userId, orgId, email);
+  const frontendUrl = process.env.FRONTEND_URL ?? "http://localhost:5173";
+  const link = `${frontendUrl}/#/invites/${invite.token}`;
+
+  res.status(201).json({ invite, link });
+}
+
 export async function createOrgBoard(req: Request, res: Response) {
   const userId = requireUserId(req);
   const orgId = parseOrgId(req);
