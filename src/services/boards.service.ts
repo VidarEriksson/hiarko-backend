@@ -4,6 +4,7 @@ import * as activityLog from "./activityLog.service";
 export async function listForUser(userId: number) {
   return prisma.board.findMany({
     where: { members: { some: { userId } } },
+    include: { org: { select: { name: true } } },
   });
 }
 
