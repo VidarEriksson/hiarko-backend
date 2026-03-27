@@ -26,6 +26,12 @@ jest.mock("../../src/prisma/client", () => ({
   user: {
     findUnique: jest.fn(),
   },
+  board: {
+    findMany: jest.fn(),
+  },
+  boardMember: {
+    createMany: jest.fn(),
+  },
 }));
 
 jest.mock("crypto", () => ({
@@ -168,17 +174,30 @@ describe("org.service — invites", () => {
       invitedBy: { name: "Admin", email: "admin@example.com" },
     };
 
-    it("adds user to org and marks invite accepted", async () => {
+    it("adds user to org, adds them to all org boards, and marks invite accepted", async () => {
       (prisma.orgInvite.findUnique as jest.Mock).mockResolvedValue(pendingInvite);
       (prisma.user.findUnique as jest.Mock).mockResolvedValue({ email: "user@example.com" });
       (prisma.orgMember.findUnique as jest.Mock).mockResolvedValue(null);
       (prisma.orgMember.create as jest.Mock).mockResolvedValue({});
+      (prisma.board.findMany as jest.Mock).mockResolvedValue([{ id: 10 }, { id: 11 }]);
+      (prisma.boardMember.createMany as jest.Mock).mockResolvedValue({ count: 2 });
       (prisma.orgInvite.update as jest.Mock).mockResolvedValue({});
 
       const result = await orgService.acceptInvite(10, "abc");
 
       expect(prisma.orgMember.create).toHaveBeenCalledWith({
         data: { orgId: 1, userId: 10, role: "MEMBER" },
+      });
+      expect(prisma.board.findMany).toHaveBeenCalledWith({
+        where: { orgId: 1 },
+        select: { id: true },
+      });
+      expect(prisma.boardMember.createMany).toHaveBeenCalledWith({
+        data: [
+          { boardId: 10, userId: 10, role: "MEMBER" },
+          { boardId: 11, userId: 10, role: "MEMBER" },
+        ],
+        skipDuplicates: true,
       });
       expect(prisma.orgInvite.update).toHaveBeenCalledWith({
         where: { token: "abc" },
@@ -196,6 +215,7 @@ describe("org.service — invites", () => {
       await orgService.acceptInvite(10, "abc");
 
       expect(prisma.orgMember.create).not.toHaveBeenCalled();
+      expect(prisma.board.findMany).not.toHaveBeenCalled();
       expect(prisma.orgInvite.update).toHaveBeenCalled();
     });
 

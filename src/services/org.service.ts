@@ -195,6 +195,16 @@ export async function acceptInvite(userId: number, token: string) {
     await prisma.orgMember.create({
       data: { orgId: invite.orgId, userId, role: "MEMBER" },
     });
+
+    // Add to all boards in this org
+    const orgBoards = await prisma.board.findMany({
+      where: { orgId: invite.orgId },
+      select: { id: true },
+    });
+    await prisma.boardMember.createMany({
+      data: orgBoards.map(b => ({ boardId: b.id, userId, role: "MEMBER" })),
+      skipDuplicates: true,
+    });
   }
 
   await prisma.orgInvite.update({
@@ -235,7 +245,7 @@ export async function createBoard(
   if (!membership) throw forbidden();
   if (membership.role === "MEMBER") throw forbidden();
 
-  return prisma.board.create({
+  const board = await prisma.board.create({
     data: {
       name,
       ownerId: userId,
@@ -243,4 +253,18 @@ export async function createBoard(
       members: { create: { userId, role: "OWNER" } },
     },
   });
+
+  // Add all other org members as board members
+  const otherMembers = await prisma.orgMember.findMany({
+    where: { orgId, userId: { not: userId } },
+    select: { userId: true },
+  });
+  if (otherMembers.length > 0) {
+    await prisma.boardMember.createMany({
+      data: otherMembers.map(m => ({ boardId: board.id, userId: m.userId, role: "MEMBER" })),
+      skipDuplicates: true,
+    });
+  }
+
+  return board;
 }
