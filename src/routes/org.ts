@@ -1,6 +1,7 @@
 import { Router } from "express";
 import { authenticateToken } from "../middleware/authMiddleware";
 import * as orgController from "../controllers/org.controller";
+import viewsRouter from "./views";
 
 const router = Router();
 
@@ -15,5 +16,7 @@ router.patch("/:id/members/:userId", authenticateToken, orgController.updateMemb
 
 router.post("/:id/invites", authenticateToken, orgController.createInvite);
 router.post("/:id/boards", authenticateToken, orgController.createOrgBoard);
+
+router.use("/:id/views", viewsRouter);
 
 export default router;
