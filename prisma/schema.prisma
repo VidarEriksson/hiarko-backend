@@ -27,6 +27,7 @@ model User {
   ownedOrgs      Organization[] @relation("OrgOwner")
   orgMemberships OrgMember[]
   invitesSent    OrgInvite[]    @relation("InviteSender")
+  createdViews   View[]
 }
 
 model Board {
@@ -133,8 +134,23 @@ model Organization {
   members   OrgMember[]
   boards    Board[]
   invites   OrgInvite[]
+  views     View[]
 
   @@index([ownerId])
+}
+
+model View {
+  id          Int          @id @default(autoincrement())
+  name        String
+  orgId       Int
+  org         Organization @relation(fields: [orgId], references: [id], onDelete: Cascade)
+  createdById Int
+  createdBy   User         @relation(fields: [createdById], references: [id], onDelete: Cascade)
+  config      Json
+  createdAt   DateTime     @default(now())
+  updatedAt   DateTime     @updatedAt
+
+  @@index([orgId])
 }
 
 model OrgMember {
