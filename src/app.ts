@@ -28,7 +28,7 @@ export function createApp() {
   app.use("/invites", inviteRoutes);
 
   app.use(express.static(path.join(process.cwd(), "public")));
-  app.get("*", (_req, res) => {
+  app.get("/{*path}", (_req, res) => {
     res.sendFile(path.join(process.cwd(), "public", "index.html"));
   });
 
